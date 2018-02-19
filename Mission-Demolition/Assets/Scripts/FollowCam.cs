@@ -17,13 +17,22 @@ public class FollowCam : MonoBehaviour {
 		camZ = this.transform.position.z;
 	}
 
+	private Vector3 destination;
+
 	void FixedUpdate(){
 		if (POI == null) {
-			return;
+			destination = Vector3.zero;
+		} else {
+
+			destination = POI.transform.position;
+
+			if (POI.tag == "Projectile") {
+				if (POI.GetComponent<Rigidbody> ().IsSleeping ()) {
+					POI = null;
+					return;
+				}
+			}
 		}
-
-		Vector3 destination = POI.transform.position;
-
 		destination.x = Mathf.Max (minXY.x, destination.x);
 		destination.y = Mathf.Max (minXY.y, destination.y);
 
@@ -34,5 +43,6 @@ public class FollowCam : MonoBehaviour {
 		transform.position = destination;
 
 		Camera.main.orthographicSize = destination.y + 10;
+		
 	}
 }

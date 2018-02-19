@@ -2,6 +2,8 @@
 using UnityEngine;
 
 public class Slingshot : MonoBehaviour {
+	static private Slingshot S;
+
 	// fields set in the Unity Inspector pane
 	[Header("Set in Inspector")]
 	public GameObject prefabProjectile;
@@ -14,10 +16,18 @@ public class Slingshot : MonoBehaviour {
 	public GameObject projectile;
 	public bool aimingMode;
 
+	private bool canShoot = true;
 	private Rigidbody projectileRigidbody;
 
+	static public Vector3 LAUNCH_POS{
+		get{
+			if(S==null)return Vector3.zero;
+			return S.launchPos;
+		}
+	}
 
 	void Awake(){
+		S = this;
 		Transform launchPointTrans = transform.Find ("LaunchPoint");
 		launchPoint = launchPointTrans.gameObject;
 		launchPoint.SetActive (false);
@@ -26,12 +36,18 @@ public class Slingshot : MonoBehaviour {
 
 
 	void OnMouseDown(){
-		aimingMode = true;
-		projectile = Instantiate (prefabProjectile) as GameObject;
-		projectile.transform.position = launchPos;
+		if (canShoot) {
+			aimingMode = true;
+			projectile = Instantiate (prefabProjectile) as GameObject;
+			projectile.transform.position = launchPos;
 
-		projectileRigidbody = projectile.GetComponent<Rigidbody> ();
-		projectileRigidbody.isKinematic = true;
+			projectileRigidbody = projectile.GetComponent<Rigidbody> ();
+			projectileRigidbody.isKinematic = true;
+		}
+	}
+
+	void canNowShoot(){
+		canShoot = true;
 	}
 
 	void Update(){
@@ -46,7 +62,7 @@ public class Slingshot : MonoBehaviour {
 		Vector3 mouseDelta = mousePos3D - launchPos;
 
 		float maxMagnitude = this.GetComponent<SphereCollider> ().radius;
-		if (mouseDelta.magnitude < maxMagnitude) {
+		if (mouseDelta.magnitude > maxMagnitude) {
 			mouseDelta.Normalize ();
 			mouseDelta *= maxMagnitude;
 		}
@@ -56,10 +72,14 @@ public class Slingshot : MonoBehaviour {
 
 		if (Input.GetMouseButtonUp (0)) {
 			aimingMode = false;
+			canShoot = false;
+			Invoke ("canNowShoot", 3.0f);
 			projectileRigidbody.isKinematic = false;
 			projectileRigidbody.velocity = -mouseDelta * velocityMult;
 			FollowCam.POI = projectile;
 			projectile = null;
+			MissionDemolition.ShotFired ();
+			ProjectileLine.s.poi = projectile;
 		}
 	}
 
